@@ -1,0 +1,73 @@
+---
+title: "Success probability"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+According to derived formula, let's define function to calculate probability of choosing the best candidate.
+
+```{r}
+success_probability <- function(N, n){
+  sum_of = 0
+  for(i in seq(n+1, N, 1)){
+    sum_of <- sum_of + 1/(i-1)
+  }
+  return((n/N) * sum_of)
+}
+```
+
+Then, our function to define if strategy $S_{n}$ is winning on given experiment 
+```{r}
+is_winning <- function(experiment, N, n){
+  if(N %in% experiment[1:n]){
+    return(F)
+  }else{
+    max_skipped <- max(experiment[1:n])
+    for(i in n+1:N){
+      if(experiment[i] > max_skipped){
+        return(experiment[i] == N)
+      }
+    }
+  }
+}
+```
+Then, this is function to calculate empirical success probability that calculates probability of winning with error less than $0.003$ with probability bigger than $95.4\%$
+```{r}
+empirical_success_probability <- function(N, n){
+  num_experiments <- 100000
+  successes <- 0
+  candidates <- seq(1, N, 1)
+  experiments <- replicate(num_experiments, sample(candidates))
+  for(ind_exp in 1:num_experiments){
+    experiment <- experiments[, ind_exp]
+    successes <- successes + is_winning(experiment, N, n)
+  }
+  return((successes/num_experiments))
+}
+
+compare_theoretical_and_practical <- function(N, n){
+  return(abs(success_probability(N, n) - empirical_success_probability(N, n)))
+}
+```
+And here's our plot that proves that the best variant of choosing the best candidate is rejecting fist $\frac{N}{e}$ candidates. 
+```{r}
+plot_epirical_success_probabilities <- function(N){
+  num_experiments <- 100000
+  candidates <- seq(1, N, 1)
+  experiments <- replicate(num_experiments, sample(candidates))
+  y <- c()
+  for(x in 1:N){
+    successes <- 0
+    for(ind_exp in 1:num_experiments){
+      experiment <- experiments[, ind_exp]
+      successes <- successes + is_winning(experiment, N, x)
+    }
+    y[x] <- (successes/num_experiments)
+  }
+  plot(y, xlab ="number of candidates rejected", ylab = "Empirical probability of choosing best candidate")
+}
+plot_epirical_success_probabilities(100)
+```
+
